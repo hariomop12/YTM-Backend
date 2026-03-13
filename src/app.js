@@ -12,6 +12,7 @@ const redis = require("./config/redis");
 const globalErrorHandler = require("./middlewares/errorHandler");
 const { HeadBucketCommand } = require("@aws-sdk/client-s3");
 const { r2Client, bucketName, isConfigured: isR2Configured } = require("./config/r2");
+const userRoutes = require("./routes/user.routes");
 
  
 const app = express();
@@ -26,7 +27,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ─── Routes ───────────────────── 
- 
+app.use("/api", userRoutes);
+
 // ─── Root ─────────────────────────────────────────────────
 app.get("/", (req, res) => {
   res.json({
