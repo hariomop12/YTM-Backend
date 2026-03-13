@@ -6,10 +6,12 @@ const cors = require("cors");
 const compression = require("compression");
 const morgan = require("morgan");
 
-const { sequelize } = require("./config/db");
+const sequelize = require("./config/db");
 const connectMongo = require("./config/mongo");
 const redis = require("./config/redis");
 const globalErrorHandler = require("./middlewares/errorHandler");
+const { HeadBucketCommand } = require("@aws-sdk/client-s3");
+const { r2Client, bucketName, isConfigured: isR2Configured } = require("./config/r2");
 
  
 const app = express();
@@ -37,23 +39,24 @@ app.get("/", (req, res) => {
 // ─── Health Check ─────────────────────────────────────────
 app.get("/health", async (req, res) => {
   const health = {
-    status: "ok",
-    uptime: `${Math.floor(process.uptime())}s`,
+    status: "✅ ok",
+    uptime: `⏱️ ${Math.floor(process.uptime())}s`,
     timestamp: new Date().toISOString(),
     services: {
-      mysql: "unreachable",
-      mongodb: "unreachable",
-      redis: "unreachable",
+      mysql: "🔴 unreachable",
+      mongodb: "🔴 unreachable",
+      redis: "🔴 unreachable",
+      r2: "🔴 unreachable",
     },
   };
 
   // MySQL
   try {
     await sequelize.authenticate();
-    health.services.mysql = "connected";
+    health.services.mysql = "🟢 connected";
   } catch (err) {
-    health.services.mysql = `error: ${err.message}`;
-    health.status = "degraded";
+    health.services.mysql = `🔴 error: ${err.message}`;
+    health.status = "⚠️ degraded";
   }
 
   // MongoDB
@@ -62,28 +65,41 @@ app.get("/health", async (req, res) => {
     const state = mongoose.connection.readyState;
     // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
     const stateMap = {
-      0: "disconnected",
-      1: "connected",
-      2: "connecting",
-      3: "disconnecting",
+      0: "🔴 disconnected",
+      1: "🟢 connected",
+      2: "🟡 connecting",
+      3: "🟠 disconnecting",
     };
-    health.services.mongodb = stateMap[state] || "unknown";
-    if (state !== 1) health.status = "degraded";
+    health.services.mongodb = stateMap[state] || "❓ unknown";
+    if (state !== 1) health.status = "⚠️ degraded";
   } catch (err) {
-    health.services.mongodb = `error: ${err.message}`;
-    health.status = "degraded";
+    health.services.mongodb = `🔴 error: ${err.message}`;
+    health.status = "⚠️ degraded";
   }
 
   // Redis
   try {
     await redis.ping();
-    health.services.redis = "connected";
+    health.services.redis = "🟢 connected";
   } catch (err) {
-    health.services.redis = `error: ${err.message}`;
-    health.status = "degraded";
+    health.services.redis = `🔴 error: ${err.message}`;
+    health.status = "⚠️ degraded";
   }
 
-  const statusCode = health.status === "ok" ? 200 : 503;
+  // R2 Connection
+  if (!isR2Configured || !r2Client || !bucketName) {
+    health.services.r2 = "⚙️ not configured";
+  } else {
+    try {
+      await r2Client.send(new HeadBucketCommand({ Bucket: bucketName }));
+      health.services.r2 = "🟢 connected";
+    } catch (err) {
+      health.services.r2 = `🔴 error: ${err.message}`;
+      health.status = "⚠️ degraded";
+    }
+  }
+
+  const statusCode = health.status === "✅ ok" ? 200 : 503;
   res.status(statusCode).json(health);
 });
 

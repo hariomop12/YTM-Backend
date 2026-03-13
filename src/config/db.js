@@ -26,4 +26,4 @@ const sequelize = new Sequelize(MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD, {
   },
 });
 
-module.exports = { sequelize };
+module.exports = sequelize ;
