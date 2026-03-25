@@ -13,6 +13,8 @@ const Song = sequelize.define(
     play_count: { type: DataTypes.BIGINT, defaultValue: 0 },
     is_published: { type: DataTypes.BOOLEAN, defaultValue: false },
     release_date: { type: DataTypes.DATE },
+    artist_id: { type: DataTypes.INTEGER, allowNull: true },
+    album_id: { type: DataTypes.INTEGER, allowNull: true },
   },
   {
     timestamps: true,
@@ -20,10 +22,10 @@ const Song = sequelize.define(
   },
 );
 
-Song.belongsTo(Artist, { foreignKey: "artist_id", as: "artist" });
+Song.belongsTo(Artist, { foreignKey: "artist_id", as: "artist", onDelete: "CASCADE" });
 Artist.hasMany(Song, { foreignKey: "artist_id", as: "songs" });
 
-Song.belongsTo(Album, { foreignKey: "album_id", as: "album" });
+Song.belongsTo(Album, { foreignKey: "album_id", as: "album", onDelete: "CASCADE" });
 Album.hasMany(Song, { foreignKey: "album_id", as: "songs" });
 
 module.exports = Song;
