@@ -14,6 +14,7 @@ const { HeadBucketCommand } = require("@aws-sdk/client-s3");
 const { r2Client, bucketName, isConfigured: isR2Configured } = require("./config/r2");
 const userRoutes = require("./routes/user.routes");
 const artistRoutes = require("./routes/artist.routes");
+const songRoutes = require("./routes/song.routes");
 
  
 const app = express();
@@ -30,6 +31,7 @@ app.use(express.urlencoded({ extended: true }));
 // ─── Routes ───────────────────── 
 app.use("/api", userRoutes);
 app.use("/api", artistRoutes);
+app.use("/api", songRoutes);
 
 // ─── Root ─────────────────────────────────────────────────
 app.get("/", (req, res) => {
