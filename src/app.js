@@ -15,8 +15,10 @@ const { r2Client, bucketName, isConfigured: isR2Configured } = require("./config
 const userRoutes = require("./routes/user.routes");
 const artistRoutes = require("./routes/artist.routes");
 const songRoutes = require("./routes/song.routes");
+const swaggerUi = require("swagger-ui-express");
+const swaggerJsdoc = require("swagger-jsdoc");
+const { specs } = require("./config/swagger");
 
- 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
@@ -109,6 +111,20 @@ app.get("/health", async (req, res) => {
   res.status(statusCode).json(health);
 });
 
+// ─── Swagger UI ─────────────────────────────────────────────
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(specs, {
+    customSiteTitle: "SoundWave API Docs",
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      filter: true,
+    },
+  }),
+);
+
 // ─── 404 Handler ──────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });
@@ -135,6 +151,7 @@ const start = async () => {
     app.listen(PORT, () => {
       console.log(`🚀 SoundWave API running at http://localhost:${PORT}`);
       console.log(`📄 Health check → http://localhost:${PORT}/health`);
+      console.log(`📄 Docs → http://localhost:${PORT}/api-docs`);
     });
   } catch (err) {
     console.error("❌ Failed to start server:", err.message);
